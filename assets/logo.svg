@@ -1,0 +1,90 @@
+<svg viewBox="0 0 660 150" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ArenaBots.io">
+  <defs>
+    <linearGradient id="orangeG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0"   stop-color="#ffb05a"/>
+      <stop offset="0.5" stop-color="#ff7a1f"/>
+      <stop offset="1"   stop-color="#c84200"/>
+    </linearGradient>
+    <linearGradient id="steelG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#8a93a6"/>
+    </linearGradient>
+    <linearGradient id="textG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#cfd6e2"/>
+    </linearGradient>
+    <filter id="orangeGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3.5" result="blur"/>
+      <feFlood flood-color="#ff6a00" flood-opacity="0.55"/>
+      <feComposite in2="blur" operator="in"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="textShadow" x="-10%" y="-10%" width="120%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+
+  <!-- ============= Hex Arena Mark ============= -->
+  <g transform="translate(82,75)">
+    <!-- Outer hex -->
+    <polygon points="-62,0 -31,-54 31,-54 62,0 31,54 -31,54"
+             fill="#161b25" stroke="#2a3142" stroke-width="2.5"/>
+    <!-- Hazard dashed ring -->
+    <polygon points="-54,0 -27,-46 27,-46 54,0 27,46 -27,46"
+             fill="none" stroke="#ffd23f" stroke-width="2"
+             stroke-dasharray="5,4" opacity="0.55"/>
+    <!-- Inner panel -->
+    <polygon points="-46,0 -23,-39 23,-39 46,0 23,39 -23,39"
+             fill="#0a0d13" stroke="#161b25" stroke-width="1"/>
+
+    <!-- Wedge bot body -->
+    <polygon points="-24,-19 26,0 -24,19"
+             fill="url(#orangeG)" stroke="#0a0d13" stroke-width="2.5"
+             filter="url(#orangeGlow)"/>
+    <line x1="-22" y1="-13" x2="-22" y2="13"
+          stroke="rgba(0,0,0,0.4)" stroke-width="1"/>
+
+    <!-- Spinner blade (animated) -->
+    <g transform="translate(24 0)">
+      <g>
+        <animateTransform attributeName="transform" type="rotate"
+          from="0" to="360" dur="1.4s" repeatCount="indefinite"/>
+        <path d="M 0 -16 L 5 -3 L -5 -3 Z
+                 M 13.86 8 L 1.5 4 L 4 13 Z
+                 M -13.86 8 L -1.5 4 L -4 13 Z"
+              fill="url(#steelG)" stroke="#0a0d13"
+              stroke-width="1.5" stroke-linejoin="round"/>
+      </g>
+      <circle cx="0" cy="0" r="3.5" fill="#0a0d13"/>
+    </g>
+
+    <!-- Sparks -->
+    <circle cx="42"  cy="-32" r="2.5" fill="#ffd23f"/>
+    <circle cx="-40" cy="-28" r="2"   fill="#ff6a00"/>
+    <circle cx="-42" cy="30"  r="2.2" fill="#ffd23f"/>
+    <circle cx="38"  cy="34"  r="1.8" fill="#ff6a00"/>
+  </g>
+
+  <!-- ============= Wordmark ============= -->
+  <g font-family="'Segoe UI', ui-sans-serif, system-ui, -apple-system, Roboto, sans-serif">
+    <!-- ARENA -->
+    <text x="172" y="92" font-size="64" font-weight="900"
+          letter-spacing="2" fill="url(#textG)" filter="url(#textShadow)">ARENA</text>
+    <!-- BOTS -->
+    <text x="362" y="92" font-size="64" font-weight="900"
+          letter-spacing="2" fill="url(#orangeG)" filter="url(#textShadow)">BOTS</text>
+    <!-- .io tag -->
+    <rect x="525" y="34" width="44" height="26" rx="4" fill="#ffd23f"/>
+    <text x="547" y="53" font-size="18" font-weight="900"
+          letter-spacing="1" fill="#0a0d13" text-anchor="middle">.io</text>
+
+    <!-- Sub-rule + tagline -->
+    <line x1="172" y1="108" x2="540" y2="108"
+          stroke="#2a3142" stroke-width="1"/>
+    <text x="172" y="128" font-size="11" font-weight="700"
+          letter-spacing="6" fill="#8a93a6">COMBAT · ROBOT · ARENA</text>
+  </g>
+</svg>

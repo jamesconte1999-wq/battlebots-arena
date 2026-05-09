@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ArenaBots.io — Combat Robot Arena</title>
+  <link rel="icon" type="image/svg+xml" href="assets/mark.svg" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+
+    <!-- ===== TITLE SCREEN ===== -->
+    <section id="screen-title" class="screen active">
+      <div class="title-topright">
+        <div class="balance-hud" id="balance-hud-title"></div>
+        <div class="account-pill" id="account-pill"></div>
+      </div>
+      <div class="title-wrap">
+        <img class="logo-img" src="assets/logo.svg" alt="ArenaBots.io" />
+        <p class="tagline">Build it. Drive it. Wreck it.</p>
+        <div class="title-actions">
+          <button class="btn btn-primary" id="btn-quick-match">Quick Match</button>
+          <button class="btn btn-secondary" data-go="builder">Solo / Build</button>
+          <button class="btn btn-pro" data-go="store">Pro Store</button>
+        </div>
+        <div class="title-actions slim">
+          <button class="btn btn-ghost" id="btn-show-auth">Sign in / Sign up</button>
+          <button class="btn btn-ghost" id="btn-show-ladder">Ladder</button>
+        </div>
+        <p class="hint">Premium combat-robot arena · Demo mode (no real charges)</p>
+      </div>
+      <div class="bg-grid"></div>
+    </section>
+
+    <!-- ===== BUILDER SCREEN ===== -->
+    <section id="screen-builder" class="screen">
+      <header class="topbar">
+        <h2>Bot Workshop</h2>
+        <div class="topbar-actions">
+          <div class="balance-hud" id="balance-hud-builder"></div>
+          <button class="btn btn-ghost" data-go="store">Store</button>
+          <button class="btn btn-ghost" data-go="title">Back</button>
+          <button class="btn btn-secondary" id="btn-find-match">Find Match</button>
+          <button class="btn btn-primary" id="btn-fight">Solo Tournament →</button>
+        </div>
+      </header>
+
+      <div class="builder-grid">
+        <!-- Preview / paint / radar -->
+        <div class="panel preview-panel">
+          <canvas id="preview-canvas" width="320" height="320"></canvas>
+          <div class="name-row">
+            <label>Name</label>
+            <input id="bot-name" type="text" maxlength="14" value="Wreckless" />
+          </div>
+          <div class="color-row">
+            <label>Body</label>
+            <div id="color-swatches" class="swatch-row"></div>
+          </div>
+          <div class="color-row">
+            <label>Accent</label>
+            <div id="accent-swatches" class="swatch-row"></div>
+          </div>
+          <div class="color-row">
+            <label>Pattern</label>
+            <div id="pattern-list" class="pattern-row"></div>
+          </div>
+          <div class="radar-wrap">
+            <canvas id="radar-canvas" width="280" height="220"></canvas>
+          </div>
+        </div>
+
+        <!-- Tabbed loadout -->
+        <div class="panel tab-panel">
+          <div id="builder-tabs" class="tab-bar"></div>
+          <div id="tab-content" class="tab-content"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== ARENA SCREEN ===== -->
+    <section id="screen-arena" class="screen">
+      <header class="topbar arena-topbar">
+        <div class="hud-bot" id="hud-player">
+          <div class="hud-name">YOU</div>
+          <div class="hud-bar"><div class="hud-fill"></div></div>
+        </div>
+        <div class="arena-center">
+          <div id="round-label">ROUND 1 / 3</div>
+          <div id="match-timer">60</div>
+        </div>
+        <div class="hud-bot right" id="hud-enemy">
+          <div class="hud-name">ENEMY</div>
+          <div class="hud-bar"><div class="hud-fill"></div></div>
+        </div>
+      </header>
+      <div class="arena-wrap">
+        <canvas id="arena-canvas" width="900" height="560"></canvas>
+        <div class="controls-hint">
+          <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> drive · <kbd>Space</kbd> weapon · <kbd>P</kbd> pause
+        </div>
+        <!-- Multiplayer overlay (hidden during solo) -->
+        <div id="mp-overlay" class="mp-overlay hidden">
+          <div class="mp-banner" id="mp-banner">Connecting…</div>
+          <div class="mp-scoreboard" id="mp-scoreboard"></div>
+          <button class="btn btn-ghost mp-quit" id="btn-mp-quit">Quit Match</button>
+        </div>
+        <!-- Connection / countdown overlay -->
+        <div id="mp-status" class="overlay hidden">
+          <div class="overlay-card">
+            <h2 id="mp-status-title">Connecting…</h2>
+            <p id="mp-status-sub">Searching for an arena.</p>
+            <button class="btn btn-ghost" id="btn-mp-cancel">Cancel</button>
+          </div>
+        </div>
+      </div>
+      <div id="pause-overlay" class="overlay hidden">
+        <div class="overlay-card">
+          <h2>Paused</h2>
+          <button class="btn btn-primary" id="btn-resume">Resume</button>
+          <button class="btn btn-ghost" data-go="builder">Edit Bot</button>
+          <button class="btn btn-ghost" data-go="title">Quit</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== STORE SCREEN ===== -->
+    <section id="screen-store" class="screen">
+      <header class="topbar">
+        <h2>Pro Store</h2>
+        <div class="topbar-actions">
+          <div class="balance-hud" id="balance-hud-store"></div>
+          <button class="btn btn-ghost" data-go="title">Back</button>
+        </div>
+      </header>
+      <div class="store-wrap" id="store-wrap"></div>
+    </section>
+
+    <!-- ===== AUTH DIALOG ===== -->
+    <div id="auth-overlay" class="overlay hidden">
+      <div class="overlay-card auth-card">
+        <div class="auth-tabs">
+          <button class="auth-tab active" data-auth-tab="login">Log in</button>
+          <button class="auth-tab" data-auth-tab="signup">Sign up</button>
+        </div>
+        <form id="auth-form" class="auth-form" autocomplete="on">
+          <label>Username
+            <input type="text" id="auth-username" autocomplete="username" maxlength="16" />
+          </label>
+          <label class="auth-display hidden">Display name
+            <input type="text" id="auth-display" maxlength="14" />
+          </label>
+          <label>Password
+            <input type="password" id="auth-password" autocomplete="current-password" minlength="6" />
+          </label>
+          <p class="auth-error hidden" id="auth-error"></p>
+          <button class="btn btn-primary btn-block" id="auth-submit" type="submit">Log in</button>
+        </form>
+        <button class="btn btn-ghost btn-block" id="auth-cancel">Play as guest</button>
+      </div>
+    </div>
+
+    <!-- ===== LADDER DIALOG ===== -->
+    <div id="ladder-overlay" class="overlay hidden">
+      <div class="overlay-card ladder-card">
+        <h2>Global Ladder</h2>
+        <div class="ladder-list" id="ladder-list">Loading…</div>
+        <button class="btn btn-ghost btn-block" id="ladder-close">Close</button>
+      </div>
+    </div>
+
+    <!-- ===== MP MATCH RESULT DIALOG ===== -->
+    <div id="mp-result-overlay" class="overlay hidden">
+      <div class="overlay-card mp-result-card">
+        <h2 id="mp-result-title">Match Over</h2>
+        <p id="mp-result-sub"></p>
+        <div id="mp-result-board" class="mp-result-board"></div>
+        <div class="mp-result-actions">
+          <button class="btn btn-primary" id="btn-mp-rematch">Rematch</button>
+          <button class="btn btn-ghost" id="btn-mp-leave">Back to Title</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== UNLOCK DIALOG ===== -->
+    <div id="unlock-overlay" class="overlay hidden">
+      <div class="overlay-card unlock-card">
+        <div id="unlock-preview"></div>
+        <h2 id="unlock-title">Unlock Item</h2>
+        <p id="unlock-desc"></p>
+        <div class="unlock-actions">
+          <button class="btn btn-bolts" id="btn-buy-bolts"></button>
+          <button class="btn btn-crowns" id="btn-buy-crowns"></button>
+        </div>
+        <button class="btn btn-pro btn-block" id="btn-pro-from-unlock">Or get Pro Pass — unlock everything</button>
+        <button class="btn btn-ghost btn-block" id="btn-cancel-unlock">Cancel</button>
+      </div>
+    </div>
+
+    <!-- ===== RESULT SCREEN ===== -->
+    <section id="screen-result" class="screen">
+      <div class="overlay-card big">
+        <h2 id="result-title">Victory</h2>
+        <p id="result-sub"></p>
+        <div class="result-actions">
+          <button class="btn btn-primary" id="btn-next">Next Match</button>
+          <button class="btn btn-ghost" data-go="builder">Rebuild Bot</button>
+          <button class="btn btn-ghost" data-go="title">Main Menu</button>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Production server URL (edit js/env.js after deploy) -->
+  <script src="js/env.js"></script>
+  <!-- Colyseus client SDK (UMD build, exposes window.Colyseus) -->
+  <script src="https://unpkg.com/colyseus.js@0.15.16/dist/colyseus.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/bot.js"></script>
+  <script src="js/builder.js"></script>
+  <script src="js/arena.js"></script>
+  <script src="js/shop.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/payments.js"></script>
+  <script src="js/net.js"></script>
+  <script src="js/mp.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

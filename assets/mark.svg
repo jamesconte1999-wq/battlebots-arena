@@ -1,0 +1,27 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ArenaBots">
+  <defs>
+    <linearGradient id="og" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffb05a"/>
+      <stop offset="1" stop-color="#c84200"/>
+    </linearGradient>
+    <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#8a93a6"/>
+    </linearGradient>
+  </defs>
+  <!-- Outer hex -->
+  <polygon points="6,50 28,8 72,8 94,50 72,92 28,92"
+           fill="#161b25" stroke="#ff6a00" stroke-width="3"/>
+  <!-- Hazard dash ring -->
+  <polygon points="14,50 32,16 68,16 86,50 68,84 32,84"
+           fill="#0a0d13" stroke="#ffd23f" stroke-width="1.4"
+           stroke-dasharray="3,2.5" opacity="0.7"/>
+  <!-- Wedge body -->
+  <polygon points="30,33 70,50 30,67"
+           fill="url(#og)" stroke="#0a0d13" stroke-width="2"/>
+  <!-- Spinner -->
+  <circle cx="68" cy="50" r="11" fill="url(#sg)" stroke="#0a0d13" stroke-width="1.5"/>
+  <line x1="57" y1="50" x2="79" y2="50" stroke="#0a0d13" stroke-width="2"/>
+  <line x1="68" y1="39" x2="68" y2="61" stroke="#0a0d13" stroke-width="2"/>
+  <circle cx="68" cy="50" r="3" fill="#0a0d13"/>
+</svg>
