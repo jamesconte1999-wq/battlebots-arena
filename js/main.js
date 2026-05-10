@@ -210,6 +210,14 @@ const Game = (() => {
     const enemySpec = CONFIG.opponents[roundIndex];
     roundIndex++;
 
+    // Add pro status to player spec if user is pro
+    if (typeof Store !== 'undefined') {
+      const s = Store.getState();
+      if (s.pro) {
+        playerSpec.isPro = true;
+      }
+    }
+
     show('arena');
     Arena.start(playerSpec, enemySpec, roundIndex, totalRounds, onMatchEnd);
   }

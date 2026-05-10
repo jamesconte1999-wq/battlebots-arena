@@ -534,6 +534,7 @@ const Arena = (() => {
   function drawNametag(ctx, b) {
     const name = (b.spec && b.spec.name) ? b.spec.name : 'BOT';
     const tagY = b.y - b.radius - 18;
+    const isPro = b.spec && b.spec.isPro;
     ctx.save();
     ctx.font = 'bold 12px system-ui, -apple-system, sans-serif';
     ctx.textAlign = 'center';
@@ -541,7 +542,8 @@ const Arena = (() => {
     const padX = 8;
     const padY = 4;
     const textW = ctx.measureText(name).width;
-    const boxW = textW + padX * 2;
+    const proBadgeW = isPro ? 24 : 0;
+    const boxW = textW + padX * 2 + proBadgeW;
     const boxH = 14 + padY * 2;
     const x = b.x - boxW / 2;
     const y = tagY - boxH / 2;
@@ -569,7 +571,18 @@ const Arena = (() => {
     ctx.stroke();
     // Text
     ctx.fillStyle = b.isPlayer ? '#ffd23f' : '#ffffff';
-    ctx.fillText(name, b.x, tagY);
+    ctx.fillText(name, b.x - proBadgeW / 2, tagY);
+    // PRO badge (animated)
+    if (isPro) {
+      const pulse = 0.8 + 0.2 * Math.sin(performance.now() / 200);
+      ctx.globalAlpha = pulse;
+      ctx.font = 'bold 10px system-ui, -apple-system, sans-serif';
+      ctx.fillStyle = '#ffd23f';
+      ctx.fillText('★', b.x + textW / 2 + 4, tagY);
+      ctx.font = 'bold 9px system-ui, -apple-system, sans-serif';
+      ctx.fillText('PRO', b.x + textW / 2 + 14, tagY);
+      ctx.globalAlpha = 1;
+    }
     ctx.restore();
   }
 
