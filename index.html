@@ -100,6 +100,17 @@
         <div class="controls-hint">
           <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> drive · <kbd>Space</kbd> weapon · <kbd>P</kbd> pause
         </div>
+        <!-- Mobile / touch controls (only visible on coarse pointers) -->
+        <div id="touch-controls" class="touch-controls hidden">
+          <div class="tc-joystick" id="tc-joystick">
+            <div class="tc-joy-base"></div>
+            <div class="tc-joy-knob" id="tc-joy-knob"></div>
+          </div>
+          <div class="tc-right">
+            <button class="tc-btn tc-pause" id="tc-pause" aria-label="Pause">II</button>
+            <button class="tc-btn tc-fire" id="tc-fire" aria-label="Fire">FIRE</button>
+          </div>
+        </div>
         <!-- Multiplayer overlay (hidden during solo) -->
         <div id="mp-overlay" class="mp-overlay hidden">
           <div class="mp-banner" id="mp-banner">Connecting…</div>
@@ -222,6 +233,7 @@
   <script src="js/bot.js"></script>
   <script src="js/builder.js"></script>
   <script src="js/arena.js"></script>
+  <script src="js/touch.js"></script>
   <script src="js/shop.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/payments.js"></script>

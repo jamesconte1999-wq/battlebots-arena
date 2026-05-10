@@ -1081,3 +1081,169 @@ kbd {
 .ladder-row .lr-level { color: #ffd23f; font-weight: 800; }
 .ladder-row .lr-rp    { color: var(--accent); font-weight: 800; text-align: right; }
 .ladder-row .lr-wk    { color: var(--muted); text-align: right; }
+
+/* ===========================================================================
+   Touch / mobile controls
+   =========================================================================== */
+.touch-controls {
+  position: absolute; inset: 0;
+  pointer-events: none;          /* let the canvas under us still receive */
+  z-index: 4;
+}
+.touch-controls.hidden { display: none; }
+
+.touch-controls .tc-joystick,
+.touch-controls .tc-right,
+.touch-controls .tc-btn {
+  pointer-events: auto;          /* but our actual control surfaces do */
+}
+
+.tc-joystick {
+  position: absolute;
+  left: max(env(safe-area-inset-left, 0px), 18px);
+  bottom: max(env(safe-area-inset-bottom, 0px), 18px);
+  width: 140px; height: 140px;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.tc-joy-base {
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  background: rgba(15, 20, 30, 0.55);
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 0 24px rgba(0,0,0,0.5);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+.tc-joy-knob {
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 64px; height: 64px;
+  margin-left: -32px; margin-top: -32px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #5fa8ff, #2c6fd8 70%, #1a4796);
+  border: 2px solid rgba(255,255,255,0.35);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.45);
+  transition: transform 0.05s linear;
+  pointer-events: none;          /* parent handles all events */
+}
+
+.tc-right {
+  position: absolute;
+  right: max(env(safe-area-inset-right, 0px), 18px);
+  bottom: max(env(safe-area-inset-bottom, 0px), 18px);
+  display: flex; flex-direction: column-reverse; gap: 12px;
+  align-items: flex-end;
+}
+.tc-btn {
+  border: 2px solid rgba(255,255,255,0.25);
+  border-radius: 50%;
+  font-weight: 900;
+  font-family: inherit;
+  letter-spacing: 0.05em;
+  color: #fff;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.45);
+}
+.tc-btn:active,
+.tc-btn.active {
+  transform: scale(0.94);
+  filter: brightness(1.15);
+}
+.tc-fire {
+  width: 96px; height: 96px;
+  font-size: 18px;
+  background: radial-gradient(circle at 30% 30%, #ff8a4c, #d43c1a 70%, #7a1d0c);
+}
+.tc-pause {
+  width: 56px; height: 56px;
+  font-size: 18px;
+  background: rgba(20, 26, 38, 0.75);
+  border-color: rgba(255,255,255,0.2);
+}
+
+/* On touch devices, hide the desktop WASD/space hint to save space. */
+body.touch-mode .controls-hint { display: none; }
+
+/* ===========================================================================
+   Mobile responsive tweaks
+   =========================================================================== */
+@media (max-width: 760px) {
+  /* Keep the canvas as large as possible: shrink the topbar HUD. */
+  .arena-topbar {
+    padding: 6px 8px;
+    gap: 6px;
+  }
+  .hud-bot { gap: 4px; }
+  .hud-name { font-size: 10px; letter-spacing: 0.1em; }
+  .hud-bar { width: 110px; height: 8px; }
+  #round-label { font-size: 9px; }
+  #match-timer { font-size: 22px; }
+
+  #arena-canvas {
+    max-width: 100vw;
+    max-height: calc(100dvh - 90px);
+    border-radius: 0;
+    border-left: none; border-right: none;
+  }
+  .arena-wrap { padding: 0; }
+
+  /* Title screen: stack the action buttons full-width */
+  .title-actions { flex-direction: column; width: 100%; gap: 10px; }
+  .title-actions .btn { width: 100%; }
+  .title-actions.slim { flex-direction: row; }
+  .title-wrap { padding: 24px 18px; gap: 14px; }
+  .logo-img { max-width: 80vw; height: auto; }
+  .tagline { font-size: 14px; }
+
+  /* Top-bars on builder/store: allow wrapping */
+  .topbar { flex-wrap: wrap; gap: 8px; padding: 8px 10px; }
+  .topbar h2 { font-size: 16px; }
+  .topbar-actions { flex-wrap: wrap; gap: 6px; }
+  .topbar-actions .btn { padding: 6px 10px; font-size: 12px; }
+
+  /* Account pill / balance HUD shouldn't overflow */
+  #balance-hud-title {
+    position: static; margin: 0 auto 8px;
+  }
+  .title-topright {
+    position: static;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  /* Auth / overlay cards: fit narrow screens */
+  .overlay-card {
+    min-width: 0;
+    width: calc(100vw - 32px);
+    max-width: 360px;
+    padding: 20px 18px;
+  }
+  .overlay-card.big { padding: 24px 20px; min-width: 0; }
+
+  /* Shop store list: single column */
+  .store-wrap { padding: 12px; }
+}
+
+@media (max-width: 760px) {
+  /* Slightly smaller joystick on tiny phones */
+  .tc-joystick { width: 120px; height: 120px; }
+  .tc-joy-knob { width: 54px; height: 54px; margin-left: -27px; margin-top: -27px; }
+  .tc-fire { width: 84px; height: 84px; font-size: 15px; }
+  .tc-pause { width: 48px; height: 48px; font-size: 15px; }
+}
+
+/* Landscape phones: keep joystick a bit lower so it doesn't cover canvas */
+@media (max-height: 480px) and (pointer: coarse) {
+  .tc-joystick { width: 110px; height: 110px; bottom: 10px; left: 10px; }
+  .tc-joy-knob { width: 50px; height: 50px; margin-left: -25px; margin-top: -25px; }
+  .tc-fire { width: 80px; height: 80px; font-size: 14px; }
+  .tc-pause { width: 44px; height: 44px; font-size: 13px; }
+  .tc-right  { right: 10px; bottom: 10px; gap: 8px; }
+}
