@@ -9,7 +9,8 @@ services:
     name: arenabots-client
     branch: main
     buildCommand: ""                # no build step — plain HTML/JS/CSS
-    staticPublishPath: .
+    staticPublishPath: ./
+    publishPath: ./
     headers:
       - path: /*
         name: Cache-Control
