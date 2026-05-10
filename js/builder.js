@@ -36,13 +36,115 @@ const Builder = (() => {
     renderPatterns();
     renderTabs();
     renderActiveTab();
+    renderPresets();
     rebuildPreview();
 
     document.getElementById('bot-name').addEventListener('input', e => {
       state.name = e.target.value || 'BOT';
     });
 
+    document.getElementById('btn-save-preset').addEventListener('click', savePreset);
+    document.getElementById('btn-load-preset').addEventListener('click', () => {
+      document.getElementById('preset-dropdown').classList.toggle('hidden');
+    });
+
     requestAnimationFrame(previewLoop);
+  }
+
+  // ---------- Presets --------------------------------------------------------
+  const PRESET_KEY = 'battlebots_presets';
+
+  function getPresets() {
+    try {
+      const stored = localStorage.getItem(PRESET_KEY);
+      return stored ? JSON.parse(stored) : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function savePresets(presets) {
+    localStorage.setItem(PRESET_KEY, JSON.stringify(presets));
+  }
+
+  function savePreset() {
+    const name = prompt('Enter preset name:');
+    if (!name || !name.trim()) return;
+    const presets = getPresets();
+    presets[name.trim()] = getSpec();
+    savePresets(presets);
+    renderPresets();
+    alert('Preset saved!');
+  }
+
+  function loadPreset(name) {
+    const presets = getPresets();
+    const preset = presets[name];
+    if (!preset) return;
+    
+    state.name = preset.name;
+    state.color = preset.color;
+    state.accent = preset.accent;
+    state.pattern = preset.pattern;
+    state.chassis = preset.chassis;
+    state.weapon = preset.weapon;
+    state.mods = preset.mods || [];
+    state.stats = preset.stats || { armor: 4, speed: 4, power: 3, weight: 3 };
+    
+    document.getElementById('bot-name').value = state.name;
+    renderColors();
+    renderAccents();
+    renderPatterns();
+    renderTabs();
+    renderActiveTab();
+    rebuildPreview();
+    document.getElementById('preset-dropdown').classList.add('hidden');
+  }
+
+  function deletePreset(name) {
+    if (!confirm(`Delete preset "${name}"?`)) return;
+    const presets = getPresets();
+    delete presets[name];
+    savePresets(presets);
+    renderPresets();
+  }
+
+  function renderPresets() {
+    const presets = getPresets();
+    const list = document.getElementById('preset-list');
+    const dropdown = document.getElementById('preset-dropdown');
+    
+    if (!list || !dropdown) return;
+    
+    const names = Object.keys(presets);
+    if (names.length === 0) {
+      list.innerHTML = '<div class="preset-empty">No saved presets</div>';
+      return;
+    }
+    
+    list.innerHTML = names.map(name => `
+      <div class="preset-item">
+        <span class="preset-name">${escapeHtml(name)}</span>
+        <div class="preset-actions">
+          <button class="preset-btn preset-load" data-name="${escapeHtml(name)}">Load</button>
+          <button class="preset-btn preset-delete" data-name="${escapeHtml(name)}">Delete</button>
+        </div>
+      </div>
+    `).join('');
+    
+    list.querySelectorAll('.preset-load').forEach(btn => {
+      btn.addEventListener('click', () => loadPreset(btn.dataset.name));
+    });
+    
+    list.querySelectorAll('.preset-delete').forEach(btn => {
+      btn.addEventListener('click', () => deletePreset(btn.dataset.name));
+    });
+  }
+
+  function escapeHtml(s) {
+    return String(s || '').replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[c]));
   }
 
   // ---------- Tabs ----------------------------------------------------------

@@ -1309,3 +1309,96 @@ body.touch-mode #arena-canvas { touch-action: none; }
   .tc-pause { width: 48px; height: 48px; font-size: 14px; }
   .tc-right  { right: 10px; bottom: 10px; gap: 10px; }
 }
+
+/* ===========================================================================
+   Presets
+   =========================================================================== */
+.presets-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.presets-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.presets-header label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.presets-actions {
+  display: flex;
+  gap: 6px;
+}
+.btn-sm {
+  padding: 4px 10px;
+  font-size: 11px;
+  border-radius: 4px;
+}
+.preset-dropdown {
+  position: relative;
+  margin-top: 4px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.preset-dropdown.hidden {
+  display: none;
+}
+.preset-list {
+  display: flex;
+  flex-direction: column;
+}
+.preset-empty {
+  padding: 12px;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+.preset-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+}
+.preset-item:last-child {
+  border-bottom: none;
+}
+.preset-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+.preset-actions {
+  display: flex;
+  gap: 4px;
+}
+.preset-btn {
+  padding: 3px 8px;
+  font-size: 10px;
+  border-radius: 3px;
+  border: 1px solid var(--line);
+  background: var(--bg-1);
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.preset-btn:hover {
+  background: var(--bg-2);
+  border-color: var(--accent);
+}
+.preset-delete {
+  color: #e74c3c;
+}
+.preset-delete:hover {
+  background: rgba(231, 76, 60, 0.1);
+  border-color: #e74c3c;
+}
