@@ -149,6 +149,21 @@ const Touch = (() => {
   // -------------------------------------------------------------------------
   // Buttons
   // -------------------------------------------------------------------------
+  // Brief on-screen explanatory toast (e.g. when tapping AUTO).
+  let toastEl = null, toastT = 0;
+  function showToast(msg) {
+    if (!toastEl) {
+      toastEl = document.createElement('div');
+      toastEl.className = 'tc-toast';
+      const wrap = document.querySelector('.arena-wrap') || document.body;
+      wrap.appendChild(toastEl);
+    }
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastT);
+    toastT = setTimeout(() => toastEl.classList.remove('show'), 2200);
+  }
+
   function bindHoldButton(el, key, onChange) {
     const down = (e) => {
       e.preventDefault();
@@ -217,7 +232,30 @@ const Touch = (() => {
     joyEl.addEventListener('pointercancel', onJoyUp);
     window.addEventListener('resize', () => { if (joyActive) measureJoystick(); });
 
-    bindHoldButton(fireEl, KEY_FIRE, (down) => { fireDown = down; });
+    // FIRE button — but only if the player's weapon actually uses it.
+    // For passive weapons (spinners, drums, saws) the button shows "AUTO"
+    // and a tap shows a one-shot explanatory toast instead of firing.
+    fireEl.addEventListener('pointerdown', (e) => {
+      if (fireEl.classList.contains('passive')) {
+        e.preventDefault();
+        showToast('Your weapon damages on contact — drive into enemies!');
+        return;
+      }
+      e.preventDefault();
+      fireEl.classList.add('active');
+      fireDown = true;
+      pressKey(KEY_FIRE);
+    });
+    const fireUp = (e) => {
+      if (fireEl.classList.contains('passive')) return;
+      e.preventDefault();
+      fireEl.classList.remove('active');
+      fireDown = false;
+      releaseKey(KEY_FIRE);
+    };
+    fireEl.addEventListener('pointerup', fireUp);
+    fireEl.addEventListener('pointercancel', fireUp);
+    fireEl.addEventListener('pointerleave', fireUp);
     bindTapButton(pauseEl, KEY_PAUSE);
 
     window.addEventListener('blur', releaseAll);

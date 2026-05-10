@@ -1181,6 +1181,22 @@ kbd {
   width: 120px; height: 120px;
   font-size: 22px;
   background: radial-gradient(circle at 30% 30%, #ff8a4c, #d43c1a 70%, #7a1d0c);
+  transition: opacity 0.15s, filter 0.15s, background 0.15s;
+}
+/* Passive weapon: button becomes a non-actionable "AUTO" indicator. */
+.tc-fire.passive {
+  background: radial-gradient(circle at 30% 30%, #4a5360, #262c36 70%, #15181f);
+  border-color: rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.55);
+  font-size: 16px;
+  letter-spacing: 0.12em;
+  opacity: 0.7;
+  cursor: default;
+}
+.tc-fire.passive:active,
+.tc-fire.passive.active {
+  transform: none;
+  filter: none;
 }
 .tc-pause {
   width: 56px; height: 56px;
@@ -1194,6 +1210,28 @@ kbd {
 body.touch-mode .controls-hint { display: none; }
 body.touch-mode #screen-arena.active { overflow: hidden; touch-action: none; }
 body.touch-mode #arena-canvas { touch-action: none; }
+
+/* In-arena toast (used to explain AUTO weapons, etc.) */
+.tc-toast {
+  position: absolute;
+  left: 50%; top: 14px;
+  transform: translate(-50%, -8px);
+  background: rgba(15, 20, 30, 0.92);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 14px;
+  max-width: calc(100vw - 40px);
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.18s, transform 0.18s;
+  z-index: 6;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.45);
+}
+.tc-toast.show { opacity: 1; transform: translate(-50%, 0); }
 
 /* ===========================================================================
    Mobile responsive tweaks

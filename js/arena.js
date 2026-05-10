@@ -85,6 +85,7 @@ const Arena = (() => {
 
     document.getElementById('round-label').textContent = `ROUND ${roundIndex} / ${totalRounds}`;
     updateHud();
+    applyWeaponUI();
     requestAnimationFrame(loop);
   }
 
@@ -150,6 +151,7 @@ const Arena = (() => {
     mpGhosts.clear();
     bots = [];
     running = false;
+    _lastWeaponType = null;
   }
 
   function mpStep(dt) {
@@ -171,6 +173,7 @@ const Arena = (() => {
         };
         g = new Bot(spec, id === mpMyId);
         mpGhosts.set(id, g);
+        if (id === mpMyId) applyWeaponUI();
       }
       // Snap pose / hp from server.
       g.spec.name = bs.name;
@@ -260,6 +263,58 @@ const Arena = (() => {
     if (player.hp > enemy.hp) return 'player';
     if (enemy.hp > player.hp) return 'enemy';
     return 'draw';
+  }
+
+  // ---------------------------------------------------------------------------
+  // Weapon UI: tell the user whether their weapon needs the FIRE button or
+  // damages on contact. Updates the desktop hint and the touch fire button.
+  // ---------------------------------------------------------------------------
+  function getPlayerWeaponType() {
+    if (mpMode) {
+      const me = mpMyId ? mpGhosts.get(mpMyId) : null;
+      return (me && me.weapon && me.weapon.type) || null;
+    }
+    return (player && player.weapon && player.weapon.type) || null;
+  }
+
+  let _lastWeaponType = null;
+  function applyWeaponUI() {
+    const t = getPlayerWeaponType();
+    if (t === _lastWeaponType) return;
+    _lastWeaponType = t;
+
+    document.body.classList.toggle('weapon-passive', t === 'passive');
+    document.body.classList.toggle('weapon-active',  t === 'active');
+
+    const hint = document.querySelector('.controls-hint');
+    if (hint) {
+      if (t === 'passive') {
+        hint.innerHTML =
+          '<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> drive · ' +
+          'your weapon hits on contact — ram enemies · <kbd>P</kbd> pause';
+      } else if (t === 'active') {
+        hint.innerHTML =
+          '<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> drive · ' +
+          '<kbd>Space</kbd> trigger weapon · <kbd>P</kbd> pause';
+      } else {
+        hint.innerHTML =
+          '<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> drive · ' +
+          '<kbd>Space</kbd> weapon · <kbd>P</kbd> pause';
+      }
+    }
+
+    const fireBtn = document.getElementById('tc-fire');
+    if (fireBtn) {
+      if (t === 'passive') {
+        fireBtn.textContent = 'AUTO';
+        fireBtn.classList.add('passive');
+        fireBtn.title = 'Your weapon damages on contact — drive into enemies.';
+      } else {
+        fireBtn.textContent = 'FIRE';
+        fireBtn.classList.remove('passive');
+        fireBtn.title = 'Trigger your weapon';
+      }
+    }
   }
 
   function step(dt) {
@@ -562,5 +617,6 @@ const Arena = (() => {
   return {
     init, start, stop, setPaused,
     startMultiplayer, stopMultiplayer, computeInput,
+    getPlayerWeaponType, applyWeaponUI,
   };
 })();
