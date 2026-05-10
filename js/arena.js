@@ -48,6 +48,7 @@ const Arena = (() => {
   }
 
   function onKey(e) {
+    if (!e.key) return;
     const k = e.key.toLowerCase();
     if (e.type === 'keydown') {
       inputState.keys[k] = true;
