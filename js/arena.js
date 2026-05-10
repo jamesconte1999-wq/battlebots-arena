@@ -178,6 +178,7 @@ const Arena = (() => {
       }
       // Snap pose / hp from server.
       g.spec.name = bs.name;
+      g.spec.isPro = bs.isPro || false;
       g.x = bs.x; g.y = bs.y; g.angle = bs.angle;
       const prevHp = g.hp;
       g.hp = bs.hp; g.maxHp = bs.maxHp;
@@ -542,7 +543,7 @@ const Arena = (() => {
     const padX = 8;
     const padY = 4;
     const textW = ctx.measureText(name).width;
-    const proBadgeW = isPro ? 24 : 0;
+    const proBadgeW = isPro ? 32 : 0;
     const boxW = textW + padX * 2 + proBadgeW;
     const boxH = 14 + padY * 2;
     const x = b.x - boxW / 2;
@@ -572,15 +573,34 @@ const Arena = (() => {
     // Text
     ctx.fillStyle = b.isPlayer ? '#ffd23f' : '#ffffff';
     ctx.fillText(name, b.x - proBadgeW / 2, tagY);
-    // PRO badge (animated)
+    // PRO badge (premium animated)
     if (isPro) {
-      const pulse = 0.8 + 0.2 * Math.sin(performance.now() / 200);
+      const pulse = 0.85 + 0.15 * Math.sin(performance.now() / 180);
+      const badgeX = b.x + textW / 2 + 8;
+      const badgeY = tagY;
+      
+      // Premium gradient background
+      const gradient = ctx.createLinearGradient(badgeX - 14, badgeY - 6, badgeX + 14, badgeY + 6);
+      gradient.addColorStop(0, '#ffd23f');
+      gradient.addColorStop(0.5, '#ff9500');
+      gradient.addColorStop(1, '#ffd23f');
+      
       ctx.globalAlpha = pulse;
-      ctx.font = 'bold 10px system-ui, -apple-system, sans-serif';
-      ctx.fillStyle = '#ffd23f';
-      ctx.fillText('★', b.x + textW / 2 + 4, tagY);
+      // Glow effect
+      ctx.shadowColor = '#ffd23f';
+      ctx.shadowBlur = 8;
+      
+      // Badge background
       ctx.font = 'bold 9px system-ui, -apple-system, sans-serif';
-      ctx.fillText('PRO', b.x + textW / 2 + 14, tagY);
+      const badgeW = ctx.measureText('PRO').width + 8;
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.roundRect(badgeX - badgeW / 2 - 2, badgeY - 6, badgeW + 4, 12, 4);
+      ctx.fill();
+      
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = '#0a0d13';
+      ctx.fillText('PRO', badgeX, badgeY);
       ctx.globalAlpha = 1;
     }
     ctx.restore();
