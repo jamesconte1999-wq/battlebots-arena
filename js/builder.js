@@ -55,12 +55,38 @@ const Builder = (() => {
   const PRESET_KEY = 'battlebots_presets';
 
   function getPresets() {
+    // Try server first if signed in, fallback to localStorage
+    if (typeof Auth !== 'undefined' && Auth.isSignedIn()) {
+      return loadPresetsFromServer();
+    }
+    return loadPresetsFromLocal();
+  }
+
+  function loadPresetsFromLocal() {
     try {
       const stored = localStorage.getItem(PRESET_KEY);
       return stored ? JSON.parse(stored) : {};
     } catch (e) {
       return {};
     }
+  }
+
+  function loadPresetsFromServer() {
+    return fetch(`${window.ARENABOTS_SERVER}/api/presets`, {
+      headers: { Authorization: `Bearer ${Auth.token()}` },
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.presets) {
+          const obj = {};
+          data.presets.forEach(p => {
+            obj[p.name] = p.spec;
+          });
+          return obj;
+        }
+        return {};
+      })
+      .catch(() => loadPresetsFromLocal());
   }
 
   function savePresets(presets) {
@@ -70,18 +96,74 @@ const Builder = (() => {
   function savePreset() {
     const name = prompt('Enter preset name:');
     if (!name || !name.trim()) return;
-    const presets = getPresets();
-    presets[name.trim()] = getSpec();
+    const spec = getSpec();
+    
+    if (typeof Auth !== 'undefined' && Auth.isSignedIn()) {
+      // Save to server
+      fetch(`${window.ARENABOTS_SERVER}/api/presets`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${Auth.token()}`,
+        },
+        body: JSON.stringify({ name: name.trim(), spec }),
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data.error) {
+            alert('Error: ' + data.error);
+          } else {
+            renderPresets();
+            alert('Preset saved!');
+          }
+        })
+        .catch(err => {
+          console.error('Failed to save preset to server:', err);
+          alert('Failed to save preset. Using local storage instead.');
+          savePresetLocal(name.trim(), spec);
+        });
+    } else {
+      // Save to localStorage
+      savePresetLocal(name.trim(), spec);
+    }
+  }
+
+  function savePresetLocal(name, spec) {
+    const presets = loadPresetsFromLocal();
+    presets[name] = spec;
     savePresets(presets);
     renderPresets();
-    alert('Preset saved!');
+    alert('Preset saved locally!');
   }
 
   function loadPreset(name) {
-    const presets = getPresets();
+    if (typeof Auth !== 'undefined' && Auth.isSignedIn()) {
+      loadPresetFromServer(name);
+    } else {
+      loadPresetFromLocal(name);
+    }
+  }
+
+  function loadPresetFromServer(name) {
+    loadPresetsFromServer().then(presets => {
+      const preset = presets[name];
+      if (preset) {
+        applyPreset(preset);
+        document.getElementById('preset-dropdown').classList.add('hidden');
+      }
+    });
+  }
+
+  function loadPresetFromLocal(name) {
+    const presets = loadPresetsFromLocal();
     const preset = presets[name];
-    if (!preset) return;
-    
+    if (preset) {
+      applyPreset(preset);
+      document.getElementById('preset-dropdown').classList.add('hidden');
+    }
+  }
+
+  function applyPreset(preset) {
     state.name = preset.name;
     state.color = preset.color;
     state.accent = preset.accent;
@@ -98,46 +180,69 @@ const Builder = (() => {
     renderTabs();
     renderActiveTab();
     rebuildPreview();
-    document.getElementById('preset-dropdown').classList.add('hidden');
   }
 
   function deletePreset(name) {
     if (!confirm(`Delete preset "${name}"?`)) return;
-    const presets = getPresets();
+    
+    if (typeof Auth !== 'undefined' && Auth.isSignedIn()) {
+      // Delete from server
+      fetch(`${window.ARENABOTS_SERVER}/api/presets/${encodeURIComponent(name)}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${Auth.token()}` },
+      })
+        .then(r => r.json())
+        .then(data => {
+          renderPresets();
+        })
+        .catch(err => {
+          console.error('Failed to delete preset from server:', err);
+          alert('Failed to delete from server. Deleting locally instead.');
+          deletePresetLocal(name);
+        });
+    } else {
+      // Delete from localStorage
+      deletePresetLocal(name);
+    }
+  }
+
+  function deletePresetLocal(name) {
+    const presets = loadPresetsFromLocal();
     delete presets[name];
     savePresets(presets);
     renderPresets();
   }
 
   function renderPresets() {
-    const presets = getPresets();
-    const list = document.getElementById('preset-list');
-    const dropdown = document.getElementById('preset-dropdown');
-    
-    if (!list || !dropdown) return;
-    
-    const names = Object.keys(presets);
-    if (names.length === 0) {
-      list.innerHTML = '<div class="preset-empty">No saved presets</div>';
-      return;
-    }
-    
-    list.innerHTML = names.map(name => `
-      <div class="preset-item">
-        <span class="preset-name">${escapeHtml(name)}</span>
-        <div class="preset-actions">
-          <button class="preset-btn preset-load" data-name="${escapeHtml(name)}">Load</button>
-          <button class="preset-btn preset-delete" data-name="${escapeHtml(name)}">Delete</button>
+    getPresets().then(presets => {
+      const list = document.getElementById('preset-list');
+      const dropdown = document.getElementById('preset-dropdown');
+      
+      if (!list || !dropdown) return;
+      
+      const names = Object.keys(presets);
+      if (names.length === 0) {
+        list.innerHTML = '<div class="preset-empty">No saved presets</div>';
+        return;
+      }
+      
+      list.innerHTML = names.map(name => `
+        <div class="preset-item">
+          <span class="preset-name">${escapeHtml(name)}</span>
+          <div class="preset-actions">
+            <button class="preset-btn preset-load" data-name="${escapeHtml(name)}">Load</button>
+            <button class="preset-btn preset-delete" data-name="${escapeHtml(name)}">Delete</button>
+          </div>
         </div>
-      </div>
-    `).join('');
-    
-    list.querySelectorAll('.preset-load').forEach(btn => {
-      btn.addEventListener('click', () => loadPreset(btn.dataset.name));
-    });
-    
-    list.querySelectorAll('.preset-delete').forEach(btn => {
-      btn.addEventListener('click', () => deletePreset(btn.dataset.name));
+      `).join('');
+      
+      list.querySelectorAll('.preset-load').forEach(btn => {
+        btn.addEventListener('click', () => loadPreset(btn.dataset.name));
+      });
+      
+      list.querySelectorAll('.preset-delete').forEach(btn => {
+        btn.addEventListener('click', () => deletePreset(btn.dataset.name));
+      });
     });
   }
 
