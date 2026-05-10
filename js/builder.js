@@ -59,7 +59,7 @@ const Builder = (() => {
     if (typeof Auth !== 'undefined' && Auth.isSignedIn()) {
       return loadPresetsFromServer();
     }
-    return loadPresetsFromLocal();
+    return Promise.resolve(loadPresetsFromLocal());
   }
 
   function loadPresetsFromLocal() {
