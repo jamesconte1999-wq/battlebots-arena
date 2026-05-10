@@ -1083,6 +1083,23 @@ kbd {
 .ladder-row .lr-wk    { color: var(--muted); text-align: right; }
 
 /* ===========================================================================
+   Install (PWA) hint
+   =========================================================================== */
+.install-hint {
+  margin-top: 6px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(20, 26, 38, 0.85);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.4;
+  max-width: 360px;
+  text-align: center;
+}
+.install-hint.hidden { display: none; }
+
+/* ===========================================================================
    Touch / mobile controls
    =========================================================================== */
 .touch-controls {

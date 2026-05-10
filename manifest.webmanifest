@@ -1,0 +1,34 @@
+{
+  "name": "ArenaBots.io — Combat Robot Arena",
+  "short_name": "ArenaBots",
+  "description": "Build, drive, and wreck combat robots in a real-time multiplayer arena.",
+  "id": "/?source=pwa",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "fullscreen", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#07090d",
+  "theme_color": "#0a0d13",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    {
+      "src": "assets/mark.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/mark.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    },
+    {
+      "src": "assets/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

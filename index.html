@@ -2,9 +2,21 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
   <title>ArenaBots.io — Combat Robot Arena</title>
+  <meta name="description" content="Build, drive, and wreck combat robots in a real-time multiplayer arena." />
+  <meta name="theme-color" content="#0a0d13" />
+  <meta name="color-scheme" content="dark" />
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" type="image/svg+xml" href="assets/mark.svg" />
+  <link rel="apple-touch-icon" href="assets/mark.svg" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="ArenaBots" />
+  <meta name="mobile-web-app-capable" content="yes" />
+
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -27,6 +39,10 @@
         <div class="title-actions slim">
           <button class="btn btn-ghost" id="btn-show-auth">Sign in / Sign up</button>
           <button class="btn btn-ghost" id="btn-show-ladder">Ladder</button>
+          <button class="btn btn-ghost hidden" id="btn-install">Install App</button>
+        </div>
+        <div id="install-hint" class="install-hint hidden">
+          On iPhone: tap the <strong>Share</strong> button, then <strong>Add to Home Screen</strong>.
         </div>
         <p class="hint">Premium combat-robot arena · Demo mode (no real charges)</p>
       </div>
@@ -239,6 +255,7 @@
   <script src="js/payments.js"></script>
   <script src="js/net.js"></script>
   <script src="js/mp.js"></script>
+  <script src="js/pwa.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

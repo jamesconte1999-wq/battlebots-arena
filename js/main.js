@@ -25,6 +25,7 @@ const Game = (() => {
     if (typeof MP !== 'undefined') MP.init();
     if (typeof Payments !== 'undefined') Payments.init();
     if (typeof Touch !== 'undefined') Touch.init();
+    if (typeof PWA !== 'undefined') PWA.init();
     initAuthUI();
     initLadderUI();
     renderAccountPill();
