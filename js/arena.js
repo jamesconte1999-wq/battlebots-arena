@@ -229,7 +229,7 @@ const Arena = (() => {
     }
     drawPit();
     drawSpikes();
-    mpGhosts.forEach(g => { if (!g.dead) g.draw(ctx); });
+    mpGhosts.forEach(g => { if (!g.dead) { g.draw(ctx); drawNametag(ctx, g); } });
     for (const s of HAZARDS.saws) drawSaw(s);
     for (const p of particles) {
       const a = Math.max(0, p.life / p.max);
