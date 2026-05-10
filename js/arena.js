@@ -506,7 +506,10 @@ const Arena = (() => {
     drawSpikes();
 
     // Bots
-    for (const b of bots) if (!b.dead) b.draw(ctx);
+    for (const b of bots) if (!b.dead) {
+      b.draw(ctx);
+      drawNametag(ctx, b);
+    }
 
     // Saws (over bots so they look threatening)
     for (const s of HAZARDS.saws) drawSaw(s);
@@ -525,6 +528,27 @@ const Arena = (() => {
 
     // Walls
     drawWalls();
+  }
+
+  function drawNametag(ctx, b) {
+    const name = b.spec.name || 'BOT';
+    const y = b.y - b.radius - 14;
+    ctx.save();
+    ctx.font = 'bold 11px system-ui, -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const width = ctx.measureText(name).width + 10;
+    // Background pill
+    ctx.fillStyle = 'rgba(10, 13, 19, 0.85)';
+    ctx.strokeStyle = b.isPlayer ? 'rgba(255, 210, 63, 0.8)' : 'rgba(255, 255, 255, 0.3)';
+    ctx.lineWidth = 1;
+    roundRect(ctx, b.x - width / 2, y - 8, width, 16, 4);
+    ctx.fill();
+    ctx.stroke();
+    // Text
+    ctx.fillStyle = b.isPlayer ? '#ffd23f' : '#fff';
+    ctx.fillText(name, b.x, y);
+    ctx.restore();
   }
 
   function drawWalls() {
