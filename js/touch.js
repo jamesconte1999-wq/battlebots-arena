@@ -1,12 +1,13 @@
-// Mobile / touch controls — virtual joystick + fire + pause buttons.
+// Mobile / touch controls — analog joystick + fire / pause buttons.
 //
-// Strategy: synthesize KeyboardEvents on `window` so the existing keyboard
-// handler in arena.js picks them up. This means single-player, multiplayer,
-// and server-side input pipelines all work without any changes.
+// This module exposes BOTH:
+//   1. `Touch.getAnalog()` → { active, throttle, turn, fire }
+//      arena.js consults this for smooth analog steering / throttle.
+//   2. Synthetic keyboard events (`w/a/s/d/space/p`) — so code paths we
+//      haven't migrated (e.g. older mp input plumbing) still work.
 //
-// Active when the device reports a coarse pointer (touchscreens, game-pads
-// in mouse-emulation mode, etc.) OR when the URL has `?touch=1`. Desktop
-// users are unaffected.
+// Active when the device reports a coarse pointer (touchscreens) OR when
+// the URL has `?touch=1`. Append `?touch=0` to force-disable for testing.
 
 const Touch = (() => {
   const KEY_FORWARD = 'w';
@@ -16,10 +17,10 @@ const Touch = (() => {
   const KEY_FIRE    = ' ';
   const KEY_PAUSE   = 'p';
 
-  // Joystick deadzone / activation thresholds (fraction of joystick radius).
-  const DEADZONE   = 0.22;   // ignore tiny movements
-  const TURN_THRESH = 0.30;  // begin turning beyond this
-  const FWD_THRESH  = 0.30;  // begin throttle beyond this
+  // Joystick tuning — tighter deadzone and gentle curve so small wrist
+  // movements still produce noticeable response.
+  const DEADZONE = 0.12;          // ignore the very middle
+  const RESPONSE_CURVE = 1.5;     // 1.0 = linear, >1 = more precise near center
 
   let root = null;       // #touch-controls
   let joyEl = null;      // #tc-joystick
@@ -27,12 +28,21 @@ const Touch = (() => {
   let fireEl = null;     // #tc-fire
   let pauseEl = null;    // #tc-pause
 
+  let enabled = false;
+
+  // Joystick state
   let joyActive  = false;
   let joyPointer = -1;
   let joyCenter  = { x: 0, y: 0 };
   let joyRadius  = 60;
 
-  // Track which synthetic keys are currently "down" so we don't spam events.
+  // Live analog values (-1..1)
+  let analog = { x: 0, y: 0 };
+
+  // Live button states
+  let fireDown = false;
+
+  // Track which synthetic keys are currently "down".
   const heldKeys = new Set();
 
   function isTouchDevice() {
@@ -44,9 +54,7 @@ const Touch = (() => {
   }
 
   function dispatchKey(type, key) {
-    const ev = new KeyboardEvent(type, {
-      key, bubbles: true, cancelable: true,
-    });
+    const ev = new KeyboardEvent(type, { key, bubbles: true, cancelable: true });
     window.dispatchEvent(ev);
   }
   function pressKey(key) {
@@ -61,6 +69,18 @@ const Touch = (() => {
   }
   function releaseAll() {
     for (const k of Array.from(heldKeys)) releaseKey(k);
+    fireDown = false;
+    analog.x = 0; analog.y = 0;
+    if (knobEl) knobEl.style.transform = 'translate(0px, 0px)';
+  }
+
+  // Apply deadzone + response curve to a normalized axis value.
+  function shape(v) {
+    const a = Math.abs(v);
+    if (a < DEADZONE) return 0;
+    const t = (a - DEADZONE) / (1 - DEADZONE);     // 0..1
+    const curved = Math.pow(t, RESPONSE_CURVE) * Math.min(1, t * 1.2);
+    return Math.sign(v) * Math.min(1, curved);
   }
 
   // -------------------------------------------------------------------------
@@ -73,10 +93,6 @@ const Touch = (() => {
     joyRadius   = Math.max(20, Math.min(r.width, r.height) / 2);
   }
 
-  function setKnob(dx, dy) {
-    knobEl.style.transform = `translate(${dx}px, ${dy}px)`;
-  }
-
   function updateJoystick(clientX, clientY) {
     let dx = clientX - joyCenter.x;
     let dy = clientY - joyCenter.y;
@@ -85,26 +101,20 @@ const Touch = (() => {
       dx = dx * joyRadius / dist;
       dy = dy * joyRadius / dist;
     }
-    setKnob(dx, dy);
+    knobEl.style.transform = `translate(${dx}px, ${dy}px)`;
+    analog.x = dx / joyRadius;     // -1..1
+    analog.y = dy / joyRadius;     // -1..1 (down positive)
 
-    const nx = dx / joyRadius;          // -1..1
-    const ny = dy / joyRadius;          // -1..1 (down positive)
-    const mag = Math.hypot(nx, ny);
-    if (mag < DEADZONE) {
-      releaseKey(KEY_FORWARD); releaseKey(KEY_BACK);
-      releaseKey(KEY_LEFT);    releaseKey(KEY_RIGHT);
-      return;
-    }
-
-    // Vertical → throttle (up = forward)
-    if (ny <= -FWD_THRESH)      { pressKey(KEY_FORWARD); releaseKey(KEY_BACK); }
-    else if (ny >=  FWD_THRESH) { pressKey(KEY_BACK);    releaseKey(KEY_FORWARD); }
-    else                        { releaseKey(KEY_FORWARD); releaseKey(KEY_BACK); }
-
-    // Horizontal → turn
-    if (nx <= -TURN_THRESH)      { pressKey(KEY_LEFT);  releaseKey(KEY_RIGHT); }
-    else if (nx >=  TURN_THRESH) { pressKey(KEY_RIGHT); releaseKey(KEY_LEFT); }
-    else                         { releaseKey(KEY_LEFT); releaseKey(KEY_RIGHT); }
+    // Also drive synthetic keys so any non-analog consumer still works.
+    // Use lower thresholds than before so it triggers more easily.
+    const ax = shape(analog.x);
+    const ay = shape(analog.y);
+    if (ay < -0.05)      { pressKey(KEY_FORWARD); releaseKey(KEY_BACK); }
+    else if (ay > 0.05)  { pressKey(KEY_BACK);    releaseKey(KEY_FORWARD); }
+    else                 { releaseKey(KEY_FORWARD); releaseKey(KEY_BACK); }
+    if (ax < -0.05)      { pressKey(KEY_LEFT);  releaseKey(KEY_RIGHT); }
+    else if (ax > 0.05)  { pressKey(KEY_RIGHT); releaseKey(KEY_LEFT); }
+    else                 { releaseKey(KEY_LEFT); releaseKey(KEY_RIGHT); }
   }
 
   function onJoyDown(e) {
@@ -116,6 +126,7 @@ const Touch = (() => {
     if (joyEl.setPointerCapture) {
       try { joyEl.setPointerCapture(e.pointerId); } catch (_) {}
     }
+    joyEl.classList.add('active');
     updateJoystick(e.clientX, e.clientY);
   }
   function onJoyMove(e) {
@@ -128,7 +139,9 @@ const Touch = (() => {
     e.preventDefault();
     joyActive = false;
     joyPointer = -1;
-    setKnob(0, 0);
+    joyEl.classList.remove('active');
+    knobEl.style.transform = 'translate(0px, 0px)';
+    analog.x = 0; analog.y = 0;
     releaseKey(KEY_FORWARD); releaseKey(KEY_BACK);
     releaseKey(KEY_LEFT);    releaseKey(KEY_RIGHT);
   }
@@ -136,16 +149,18 @@ const Touch = (() => {
   // -------------------------------------------------------------------------
   // Buttons
   // -------------------------------------------------------------------------
-  function bindHoldButton(el, key) {
+  function bindHoldButton(el, key, onChange) {
     const down = (e) => {
       e.preventDefault();
       el.classList.add('active');
       pressKey(key);
+      onChange && onChange(true);
     };
     const up = (e) => {
       e.preventDefault();
       el.classList.remove('active');
       releaseKey(key);
+      onChange && onChange(false);
     };
     el.addEventListener('pointerdown', down);
     el.addEventListener('pointerup', up);
@@ -156,16 +171,28 @@ const Touch = (() => {
   function bindTapButton(el, key) {
     el.addEventListener('pointerdown', (e) => {
       e.preventDefault();
-      // P is a toggle in arena.js — emit a single keydown + keyup pair.
       pressKey(key);
-      // Release immediately so a subsequent tap toggles again.
       setTimeout(() => releaseKey(key), 30);
     });
   }
 
   // -------------------------------------------------------------------------
-  // Public
+  // Public API
   // -------------------------------------------------------------------------
+  function getAnalog() {
+    if (!enabled) return { active: false, throttle: 0, turn: 0, fire: false };
+    // Up on screen = forward. throttle range: -1 (back) .. +1 (forward)
+    const throttle = -shape(analog.y);
+    const turn     =  shape(analog.x);
+    return {
+      active: joyActive || fireDown,
+      throttle, turn,
+      fire: fireDown,
+    };
+  }
+
+  function isEnabled() { return enabled; }
+
   function init() {
     root    = document.getElementById('touch-controls');
     joyEl   = document.getElementById('tc-joystick');
@@ -179,7 +206,7 @@ const Touch = (() => {
       return;
     }
 
-    // Show the touch overlay; hide the desktop keyboard hint.
+    enabled = true;
     root.classList.remove('hidden');
     document.body.classList.add('touch-mode');
 
@@ -188,19 +215,16 @@ const Touch = (() => {
     joyEl.addEventListener('pointermove',  onJoyMove);
     joyEl.addEventListener('pointerup',    onJoyUp);
     joyEl.addEventListener('pointercancel', onJoyUp);
-    window.addEventListener('resize', () => {
-      if (joyActive) measureJoystick();
-    });
+    window.addEventListener('resize', () => { if (joyActive) measureJoystick(); });
 
-    bindHoldButton(fireEl, KEY_FIRE);
+    bindHoldButton(fireEl, KEY_FIRE, (down) => { fireDown = down; });
     bindTapButton(pauseEl, KEY_PAUSE);
 
-    // Safety: release everything if we lose focus / page hides.
     window.addEventListener('blur', releaseAll);
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) releaseAll();
     });
   }
 
-  return { init };
+  return { init, getAnalog, isEnabled };
 })();

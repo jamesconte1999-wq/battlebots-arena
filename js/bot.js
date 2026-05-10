@@ -922,9 +922,21 @@ class PlayerController {
     if (k['s'] || k['arrowdown']) throttle -= 1;
     if (k['a'] || k['arrowleft']) turn -= 1;
     if (k['d'] || k['arrowright']) turn += 1;
+    let fire = !!k[' '];
+
+    // If a touch joystick is active, override with smooth analog values.
+    if (typeof Touch !== 'undefined' && Touch.isEnabled && Touch.isEnabled()) {
+      const a = Touch.getAnalog();
+      if (a.active) {
+        throttle = a.throttle;
+        turn     = a.turn;
+      }
+      if (a.fire) fire = true;
+    }
+
     bot.input.throttle = throttle;
     bot.input.turn = turn;
-    bot.input.fire = !!k[' '];
+    bot.input.fire = fire;
   }
 }
 

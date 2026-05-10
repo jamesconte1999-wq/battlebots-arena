@@ -244,7 +244,14 @@ const Arena = (() => {
     if (k['s'] || k['arrowdown'])  throttle -= 1;
     if (k['a'] || k['arrowleft'])  turn -= 1;
     if (k['d'] || k['arrowright']) turn += 1;
-    const fire = !!(k[' '] || k['space']);
+    let fire = !!(k[' '] || k['space']);
+
+    // Analog touch override for multiplayer input.
+    if (typeof Touch !== 'undefined' && Touch.isEnabled && Touch.isEnabled()) {
+      const a = Touch.getAnalog();
+      if (a.active) { throttle = a.throttle; turn = a.turn; }
+      if (a.fire) fire = true;
+    }
     return { throttle, turn, fire };
   }
 
