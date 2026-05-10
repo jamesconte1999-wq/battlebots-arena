@@ -6,7 +6,7 @@
 //   window.ARENABOTS_SERVER = 'https://arenabots-server.onrender.com';
 // Then commit + push — Render auto-redeploys the static site.
 
-window.ARENABOTS_SERVER = '';
+window.ARENABOTS_SERVER = 'https://arenabots-server.onrender.com';
 
 // Dev aid: if we're running on HTTPS (i.e. production-ish) but no server
 // URL has been set, loudly warn so it's obvious what's wrong.
