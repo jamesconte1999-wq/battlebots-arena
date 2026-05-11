@@ -47,6 +47,9 @@ const Arena = (() => {
   const DUMMY_COLORS  = ['#ff6a00','#3aa6ff','#ff3a8a','#3aff8a','#ffd23f','#a05bff','#7affd6'];
   let mpDummies = [];       // [{ bot, ctrl, respawnT }]
   let dummiesActive = false;
+  // Track player ghost velocity from frame-to-frame position deltas
+  // so we can apply realistic ram/collision impulses to dummies.
+  let mpPlayerLastX = 0, mpPlayerLastY = 0, mpPlayerVx = 0, mpPlayerVy = 0;
 
   function init() {
     canvas = document.getElementById('arena-canvas');
@@ -196,14 +199,20 @@ const Arena = (() => {
     dummiesActive = false;
   }
 
-  function ensureDummyTargets() {
+  function ensureDummyTargets(playerGhost) {
+    const playerAlive = playerGhost && !playerGhost.dead;
     for (const d of mpDummies) {
       if (d.bot.dead) continue;
-      if (!d.ctrl.target || d.ctrl.target.dead || d.ctrl.target === d.bot ||
-          !mpDummies.some(x => x.bot === d.ctrl.target)) {
-        const candidates = mpDummies.filter(x => x !== d && !x.bot.dead);
-        d.ctrl.target = candidates.length
-          ? candidates[Math.floor(Math.random() * candidates.length)].bot
+      const t = d.ctrl.target;
+      const targetGone = !t || t.dead ||
+        (t !== playerGhost && !mpDummies.some(x => x.bot === t));
+      if (targetGone) {
+        const pool = mpDummies.filter(x => x !== d && !x.bot.dead).map(x => x.bot);
+        // ~55% of dummies prefer the player when alive — keeps action focused on user
+        if (playerAlive && Math.random() < 0.55) pool.unshift(playerGhost);
+        else if (playerAlive) pool.push(playerGhost);
+        d.ctrl.target = pool.length
+          ? pool[Math.floor(Math.random() * pool.length)]
           : null;
       }
     }
@@ -212,10 +221,31 @@ const Arena = (() => {
   function stepDummies(dt) {
     // Top up to target count
     while (mpDummies.length < DUMMY_TARGET_COUNT) mpDummies.push(spawnOneDummy());
-    ensureDummyTargets();
+
+    // Player ghost (server-driven) — allow interaction with dummies during lobby.
+    const playerGhost = mpMyId ? mpGhosts.get(mpMyId) : null;
+    const playerAlive = playerGhost && !playerGhost.dead;
+    if (playerAlive) {
+      // Estimate player velocity from position delta (server snaps don't include vel).
+      if (dt > 0) {
+        const nvx = (playerGhost.x - mpPlayerLastX) / dt;
+        const nvy = (playerGhost.y - mpPlayerLastY) / dt;
+        // Smooth a bit to dampen jitter from network ticks.
+        mpPlayerVx = mpPlayerVx * 0.5 + nvx * 0.5;
+        mpPlayerVy = mpPlayerVy * 0.5 + nvy * 0.5;
+      }
+      mpPlayerLastX = playerGhost.x;
+      mpPlayerLastY = playerGhost.y;
+    } else {
+      mpPlayerVx = mpPlayerVy = 0;
+    }
+
+    ensureDummyTargets(playerGhost);
 
     const live = mpDummies.filter(d => !d.bot.dead).map(d => d.bot);
-    const dummyWorld = { bots: live, hazards: HAZARDS, spawnImpact: (x,y) => spawnSpark(x, y, 6) };
+    // AI sees player + dummies as bots so it can avoid hazards/path properly.
+    const aiBots = playerAlive ? [...live, playerGhost] : live;
+    const dummyWorld = { bots: aiBots, hazards: HAZARDS, spawnImpact: (x,y) => spawnSpark(x, y, 6) };
 
     // AI + physics
     for (const d of mpDummies) {
@@ -280,6 +310,71 @@ const Arena = (() => {
         if (b.hp < before) {
           spawnSpark(a.x + Math.cos(a.angle) * (a.radius + a.weapon.reach),
                      a.y + Math.sin(a.angle) * (a.radius + a.weapon.reach));
+        }
+      }
+    }
+
+    // ---- Player ↔ dummy interaction (lobby playable demo) ----
+    if (playerAlive) {
+      const pSpeed = Math.hypot(mpPlayerVx, mpPlayerVy);
+
+      // Collision: push dummies out of the player (player position is server-authoritative).
+      for (const b of live) {
+        const dx = b.x - playerGhost.x, dy = b.y - playerGhost.y;
+        const dist = Math.hypot(dx, dy) || 0.001;
+        const minDist = playerGhost.radius + b.radius;
+        if (dist < minDist) {
+          const nx = dx / dist, ny = dy / dist;
+          const overlap = minDist - dist;
+          // Push only the dummy (full overlap, since player is fixed).
+          b.x += nx * overlap;
+          b.y += ny * overlap;
+          // Impulse based on player velocity along the contact normal.
+          const rel = (b.vx - mpPlayerVx) * nx + (b.vy - mpPlayerVy) * ny;
+          if (rel < 0) {
+            const k = -rel * 0.7 + 60;
+            b.vx += nx * k * 0.6;
+            b.vy += ny * k * 0.6;
+          }
+          // Player ram damage to dummy (fast/heavy collisions).
+          if (playerGhost.ramDmg > 0 && rel < -40) {
+            b.takeHit(playerGhost.ramDmg, Math.atan2(b.y - playerGhost.y, b.x - playerGhost.x), 'weapon');
+            spawnSpark(b.x, b.y, 4);
+          }
+          // Heavy ram (no ram-spike mod) still deals a small impact when fast.
+          if (playerGhost.ramDmg === 0 && pSpeed > 140 && rel < -80) {
+            b.takeHit(2, Math.atan2(b.y - playerGhost.y, b.x - playerGhost.x), 'weapon');
+            spawnSpark(b.x, b.y, 3);
+          }
+        }
+      }
+
+      // Player weapon damage to dummies.
+      const pw = playerGhost.weapon;
+      const playerWeaponLive =
+        pw && (pw.type === 'passive' ||
+              (pw.type === 'active' && playerGhost.weaponPhase === 'active'));
+      if (playerWeaponLive) {
+        for (const b of live) {
+          const before = b.hp;
+          playerGhost.tryPassiveHit(b, now);
+          if (b.hp < before) {
+            spawnSpark(playerGhost.x + Math.cos(playerGhost.angle) * (playerGhost.radius + pw.reach),
+                       playerGhost.y + Math.sin(playerGhost.angle) * (playerGhost.radius + pw.reach));
+          }
+        }
+      }
+
+      // Dummy weapons "hit" the player visually (no real damage — server is authoritative).
+      for (const a of live) {
+        if (a.weapon.type !== 'passive') continue;
+        const savedHp = playerGhost.hp;
+        a.tryPassiveHit(playerGhost, now);
+        if (playerGhost.hp < savedHp) {
+          // Restore — server-side player HP is unaffected by the local demo.
+          playerGhost.hp = savedHp;
+          playerGhost.flashT = 0.12;
+          if (Math.random() < 0.5) spawnSpark(playerGhost.x, playerGhost.y, 3);
         }
       }
     }
@@ -385,7 +480,14 @@ const Arena = (() => {
 
     // Lobby entertainment: spawn/run client-side dummy battle while waiting.
     if (mpState.phase === 'lobby') {
-      if (!dummiesActive) { dummiesActive = true; mpDummies = []; }
+      if (!dummiesActive) {
+        dummiesActive = true;
+        mpDummies = [];
+        const me = mpMyId ? mpGhosts.get(mpMyId) : null;
+        mpPlayerLastX = me ? me.x : 0;
+        mpPlayerLastY = me ? me.y : 0;
+        mpPlayerVx = mpPlayerVy = 0;
+      }
       stepDummies(dt);
     } else if (dummiesActive) {
       clearDummies();

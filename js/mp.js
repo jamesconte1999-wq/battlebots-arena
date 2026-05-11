@@ -151,7 +151,7 @@ const MP = (() => {
     if (phase === 'lobby') {
       const n = state.bots.size;
       text = n < 2
-        ? `Waiting for opponents… (${n}/8) · Demo bots brawling`
+        ? `Waiting for opponents… (${n}/8) · Warm up on the demo bots!`
         : `Filling arena… (${n}/8)`;
     } else if (phase === 'countdown') {
       text = `Match starts in ${t}…`;
