@@ -150,7 +150,9 @@ const MP = (() => {
     let kind = '';
     if (phase === 'lobby') {
       const n = state.bots.size;
-      text = n < 2 ? `Waiting for opponents… (${n}/8)` : 'Get ready…';
+      text = n < 2
+        ? `Waiting for opponents… (${n}/8) · Demo bots brawling`
+        : `Filling arena… (${n}/8)`;
     } else if (phase === 'countdown') {
       text = `Match starts in ${t}…`;
       kind = 'count';

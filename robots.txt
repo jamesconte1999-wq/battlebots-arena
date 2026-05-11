@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://arenabots.io/sitemap.xml
+
+# Disallow sensitive paths if any
+Disallow: /api/
+Disallow: /private/
+
+# Crawl-delay (optional, adjust based on server capacity)
+# Crawl-delay: 1

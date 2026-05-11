@@ -36,6 +36,18 @@ const Arena = (() => {
   let mpGhosts = new Map(); // sessionId -> client-side ghost Bot
   let mpHooks = null;
 
+  // Lobby dummies (client-side only, purely cosmetic entertainment) ----------
+  // Active only while the server reports phase==='lobby'. They fight each
+  // other locally; never sent to the server, never collide/damage the
+  // real player or other ghosts.
+  const DUMMY_TARGET_COUNT = 5;
+  const DUMMY_NAMES   = ['CRUSHER','RIPSAW','VOLT-9','BLITZ','HAVOC','TANKARD','FURY','SHRED','ZAP-X','OMEGA','GRINDR','NITRO'];
+  const DUMMY_CHASSIS = ['brick','wedge','runner','tank'];
+  const DUMMY_WEAPONS = ['spinner','flipper','hammer','flame','drum'];
+  const DUMMY_COLORS  = ['#ff6a00','#3aa6ff','#ff3a8a','#3aff8a','#ffd23f','#a05bff','#7affd6'];
+  let mpDummies = [];       // [{ bot, ctrl, respawnT }]
+  let dummiesActive = false;
+
   function init() {
     canvas = document.getElementById('arena-canvas');
     ctx = canvas.getContext('2d');
@@ -150,9 +162,172 @@ const Arena = (() => {
     mpState = null;
     mpMyId = '';
     mpGhosts.clear();
+    clearDummies();
     bots = [];
     running = false;
     _lastWeaponType = null;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Lobby dummy bots — client-side AI battle to keep waiting players entertained
+  // ---------------------------------------------------------------------------
+  function spawnOneDummy() {
+    const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+    const spec = {
+      name:    pick(DUMMY_NAMES) + '-' + (10 + Math.floor(Math.random() * 89)),
+      color:   pick(DUMMY_COLORS),
+      accent:  '#ffffff',
+      pattern: 'solid',
+      chassis: pick(DUMMY_CHASSIS),
+      weapon:  pick(DUMMY_WEAPONS),
+      mods:    [],
+      stats:   { armor: 4, speed: 4, power: 3, weight: 3 },
+    };
+    const b = new Bot(spec, false);
+    b.x = WALL + 60 + Math.random() * (W - 2 * WALL - 120);
+    b.y = WALL + 60 + Math.random() * (H - 2 * WALL - 120);
+    b.angle = Math.random() * Math.PI * 2;
+    b.isDummy = true;
+    return { bot: b, ctrl: new AIController(null), respawnT: 0 };
+  }
+
+  function clearDummies() {
+    mpDummies = [];
+    dummiesActive = false;
+  }
+
+  function ensureDummyTargets() {
+    for (const d of mpDummies) {
+      if (d.bot.dead) continue;
+      if (!d.ctrl.target || d.ctrl.target.dead || d.ctrl.target === d.bot ||
+          !mpDummies.some(x => x.bot === d.ctrl.target)) {
+        const candidates = mpDummies.filter(x => x !== d && !x.bot.dead);
+        d.ctrl.target = candidates.length
+          ? candidates[Math.floor(Math.random() * candidates.length)].bot
+          : null;
+      }
+    }
+  }
+
+  function stepDummies(dt) {
+    // Top up to target count
+    while (mpDummies.length < DUMMY_TARGET_COUNT) mpDummies.push(spawnOneDummy());
+    ensureDummyTargets();
+
+    const live = mpDummies.filter(d => !d.bot.dead).map(d => d.bot);
+    const dummyWorld = { bots: live, hazards: HAZARDS, spawnImpact: (x,y) => spawnSpark(x, y, 6) };
+
+    // AI + physics
+    for (const d of mpDummies) {
+      if (d.bot.dead) {
+        d.respawnT -= dt;
+        if (d.respawnT <= 0) {
+          const fresh = spawnOneDummy();
+          d.bot = fresh.bot;
+          d.ctrl = fresh.ctrl;
+          d.respawnT = 0;
+        }
+        continue;
+      }
+      d.ctrl.update(d.bot, dt, dummyWorld);
+      d.bot.update(dt, dummyWorld);
+      const b = d.bot;
+      if (b.x < WALL + b.radius)        { b.x = WALL + b.radius;        b.vx = Math.abs(b.vx) * 0.4; }
+      if (b.x > W - WALL - b.radius)    { b.x = W - WALL - b.radius;    b.vx = -Math.abs(b.vx) * 0.4; }
+      if (b.y < WALL + b.radius)        { b.y = WALL + b.radius;        b.vy = Math.abs(b.vy) * 0.4; }
+      if (b.y > H - WALL - b.radius)    { b.y = H - WALL - b.radius;    b.vy = -Math.abs(b.vy) * 0.4; }
+    }
+
+    // Dummy-vs-dummy collision + ram damage
+    for (let i = 0; i < live.length; i++) {
+      for (let j = i + 1; j < live.length; j++) {
+        const a = live[i], b = live[j];
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const dist = Math.hypot(dx, dy) || 0.001;
+        const minDist = a.radius + b.radius;
+        if (dist < minDist) {
+          const nx = dx / dist, ny = dy / dist;
+          const overlap = minDist - dist;
+          const totalMass = a.mass + b.mass;
+          a.x -= nx * overlap * (b.mass / totalMass);
+          a.y -= ny * overlap * (b.mass / totalMass);
+          b.x += nx * overlap * (a.mass / totalMass);
+          b.y += ny * overlap * (a.mass / totalMass);
+          const rel = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
+          if (rel < 0) {
+            const k = -rel * 0.4;
+            a.vx -= nx * k * (b.mass / totalMass);
+            a.vy -= ny * k * (b.mass / totalMass);
+            b.vx += nx * k * (a.mass / totalMass);
+            b.vy += ny * k * (a.mass / totalMass);
+          }
+          if (rel < -55) {
+            if (a.ramDmg > 0) { b.takeHit(a.ramDmg, Math.atan2(b.y - a.y, b.x - a.x), 'weapon'); spawnSpark(b.x, b.y, 4); }
+            if (b.ramDmg > 0) { a.takeHit(b.ramDmg, Math.atan2(a.y - b.y, a.x - b.x), 'weapon'); spawnSpark(a.x, a.y, 4); }
+          }
+        }
+      }
+    }
+
+    // Passive weapon damage (between dummies only)
+    const now = performance.now() / 1000;
+    for (const a of live) {
+      if (a.weapon.type !== 'passive') continue;
+      for (const b of live) {
+        if (b === a) continue;
+        const before = b.hp;
+        a.tryPassiveHit(b, now);
+        if (b.hp < before) {
+          spawnSpark(a.x + Math.cos(a.angle) * (a.radius + a.weapon.reach),
+                     a.y + Math.sin(a.angle) * (a.radius + a.weapon.reach));
+        }
+      }
+    }
+
+    // Pit hazard (instant KO)
+    for (const d of mpDummies) {
+      const b = d.bot;
+      if (b.dead || b.hover) continue;
+      const p = HAZARDS.pit;
+      if (b.x > p.x - p.w / 2 && b.x < p.x + p.w / 2 &&
+          b.y > p.y - p.h / 2 && b.y < p.y + p.h / 2) {
+        b.hp = 0; b.dead = true; b.deathReason = 'pit';
+      }
+    }
+
+    // Saw hazard
+    for (const s of HAZARDS.saws) {
+      for (let di = 0; di < mpDummies.length; di++) {
+        const b = mpDummies[di].bot;
+        if (b.dead) continue;
+        const dx = b.x - s.x, dy = b.y - s.y;
+        const d2 = Math.hypot(dx, dy);
+        if (d2 < s.r + b.radius) {
+          const key = 'saw_' + s.x + '_' + s.y + '_dum' + di;
+          const last = hitMap.get(key) || -999;
+          if (now - last > 0.25) {
+            hitMap.set(key, now);
+            b.takeHit(s.dmg, Math.atan2(dy, dx), 'hazard');
+            const k = 280;
+            b.applyImpulse(dx / d2 * k, dy / d2 * k);
+            spawnSpark(b.x, b.y);
+          }
+        }
+      }
+    }
+
+    // Schedule respawns for fresh kills so the action stays lively
+    for (const d of mpDummies) {
+      if (d.bot.dead && d.respawnT === 0) d.respawnT = 1.2 + Math.random() * 1.5;
+    }
+  }
+
+  function drawDummies() {
+    for (const d of mpDummies) {
+      if (d.bot.dead) continue;
+      d.bot.draw(ctx);
+      drawNametag(ctx, d.bot);
+    }
   }
 
   function mpStep(dt) {
@@ -208,6 +383,14 @@ const Arena = (() => {
     // Visual saw spin (rendered server-side too but we still want it animated).
     for (const s of HAZARDS.saws) s.ang += s.spin * dt;
 
+    // Lobby entertainment: spawn/run client-side dummy battle while waiting.
+    if (mpState.phase === 'lobby') {
+      if (!dummiesActive) { dummiesActive = true; mpDummies = []; }
+      stepDummies(dt);
+    } else if (dummiesActive) {
+      clearDummies();
+    }
+
     // Particle decay (impacts are local, see spawnSpark)
     particles = particles.filter(p => (p.life -= dt) > 0);
     for (const p of particles) {
@@ -230,6 +413,7 @@ const Arena = (() => {
     }
     drawPit();
     drawSpikes();
+    drawDummies();
     mpGhosts.forEach(g => { if (!g.dead) { g.draw(ctx); drawNametag(ctx, g); } });
     for (const s of HAZARDS.saws) drawSaw(s);
     for (const p of particles) {
