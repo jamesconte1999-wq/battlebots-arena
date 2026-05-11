@@ -50,6 +50,7 @@ const Arena = (() => {
   // Track player ghost velocity from frame-to-frame position deltas
   // so we can apply realistic ram/collision impulses to dummies.
   let mpPlayerLastX = 0, mpPlayerLastY = 0, mpPlayerVx = 0, mpPlayerVy = 0;
+  let mpLobbyPlayerCtrl = null; // PlayerController used during lobby for local sim
 
   function init() {
     canvas = document.getElementById('arena-canvas');
@@ -197,6 +198,7 @@ const Arena = (() => {
   function clearDummies() {
     mpDummies = [];
     dummiesActive = false;
+    mpLobbyPlayerCtrl = null;
   }
 
   function ensureDummyTargets(playerGhost) {
@@ -225,20 +227,6 @@ const Arena = (() => {
     // Player ghost (server-driven) — allow interaction with dummies during lobby.
     const playerGhost = mpMyId ? mpGhosts.get(mpMyId) : null;
     const playerAlive = playerGhost && !playerGhost.dead;
-    if (playerAlive) {
-      // Estimate player velocity from position delta (server snaps don't include vel).
-      if (dt > 0) {
-        const nvx = (playerGhost.x - mpPlayerLastX) / dt;
-        const nvy = (playerGhost.y - mpPlayerLastY) / dt;
-        // Smooth a bit to dampen jitter from network ticks.
-        mpPlayerVx = mpPlayerVx * 0.5 + nvx * 0.5;
-        mpPlayerVy = mpPlayerVy * 0.5 + nvy * 0.5;
-      }
-      mpPlayerLastX = playerGhost.x;
-      mpPlayerLastY = playerGhost.y;
-    } else {
-      mpPlayerVx = mpPlayerVy = 0;
-    }
 
     ensureDummyTargets(playerGhost);
 
@@ -246,6 +234,27 @@ const Arena = (() => {
     // AI sees player + dummies as bots so it can avoid hazards/path properly.
     const aiBots = playerAlive ? [...live, playerGhost] : live;
     const dummyWorld = { bots: aiBots, hazards: HAZARDS, spawnImpact: (x,y) => spawnSpark(x, y, 6) };
+
+    // Drive the player ghost locally during lobby so warm-up movement is
+    // responsive (server doesn't simulate during lobby).
+    if (playerAlive) {
+      if (!mpLobbyPlayerCtrl) mpLobbyPlayerCtrl = new PlayerController(inputState);
+      mpLobbyPlayerCtrl.update(playerGhost, dt);
+      playerGhost.update(dt, dummyWorld);
+      // Wall clamp
+      const b = playerGhost;
+      if (b.x < WALL + b.radius)        { b.x = WALL + b.radius;        b.vx = Math.abs(b.vx) * 0.4; }
+      if (b.x > W - WALL - b.radius)    { b.x = W - WALL - b.radius;    b.vx = -Math.abs(b.vx) * 0.4; }
+      if (b.y < WALL + b.radius)        { b.y = WALL + b.radius;        b.vy = Math.abs(b.vy) * 0.4; }
+      if (b.y > H - WALL - b.radius)    { b.y = H - WALL - b.radius;    b.vy = -Math.abs(b.vy) * 0.4; }
+      // Use the bot's actual velocity for collision impulses against dummies.
+      mpPlayerVx = playerGhost.vx;
+      mpPlayerVy = playerGhost.vy;
+      mpPlayerLastX = playerGhost.x;
+      mpPlayerLastY = playerGhost.y;
+    } else {
+      mpPlayerVx = mpPlayerVy = 0;
+    }
 
     // AI + physics
     for (const d of mpDummies) {
@@ -449,7 +458,16 @@ const Arena = (() => {
       // Snap pose / hp from server.
       g.spec.name = bs.name;
       g.spec.isPro = bs.isPro || false;
-      g.x = bs.x; g.y = bs.y; g.angle = bs.angle;
+
+      // During lobby, the player drives their own ghost locally so warm-up
+      // feels responsive (server doesn't simulate movement until the match
+      // is active). Skip pose + weapon-phase snaps for the local player
+      // once local sim is active.
+      const isMeInLobby = (id === mpMyId) && (mpState.phase === 'lobby') && dummiesActive;
+
+      if (!isMeInLobby) {
+        g.x = bs.x; g.y = bs.y; g.angle = bs.angle;
+      }
       const prevHp = g.hp;
       g.hp = bs.hp; g.maxHp = bs.maxHp;
       if (g.hp < prevHp) g.flashT = 0.12;
@@ -458,13 +476,15 @@ const Arena = (() => {
       // Sync visual weapon phase. On phase transitions, reset the
       // local phase timer so the local visualizer plays the right
       // animation length.
-      if (g.weaponPhase !== bs.weaponPhase) {
-        g.weaponPhase = bs.weaponPhase;
-        if (bs.weaponPhase === 'windup')      g.weaponPhaseT = g.weapon.windup || 0.2;
-        else if (bs.weaponPhase === 'active') g.weaponPhaseT = g.weapon.active || 0.3;
-        else                                  g.weaponPhaseT = 0;
-      } else {
-        g.weaponPhaseT = Math.max(0, g.weaponPhaseT - dt);
+      if (!isMeInLobby) {
+        if (g.weaponPhase !== bs.weaponPhase) {
+          g.weaponPhase = bs.weaponPhase;
+          if (bs.weaponPhase === 'windup')      g.weaponPhaseT = g.weapon.windup || 0.2;
+          else if (bs.weaponPhase === 'active') g.weaponPhaseT = g.weapon.active || 0.3;
+          else                                  g.weaponPhaseT = 0;
+        } else {
+          g.weaponPhaseT = Math.max(0, g.weaponPhaseT - dt);
+        }
       }
       // Passive weapons — keep blade visually spinning.
       if (g.weapon.type === 'passive') {
