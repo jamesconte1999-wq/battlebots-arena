@@ -2,7 +2,7 @@
 // shell so the game launches instantly and works offline (single-player).
 // Multiplayer / API requests pass straight through to the network.
 
-const VERSION = 'arenabots-v5';
+const VERSION = 'arenabots-v6';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
