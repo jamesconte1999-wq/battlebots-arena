@@ -28,6 +28,7 @@ const Game = (() => {
     if (typeof PWA !== 'undefined') PWA.init();
     initAuthUI();
     initLadderUI();
+    initHelpUI();
     renderAccountPill();
 
     // Wire data-go links
@@ -192,6 +193,24 @@ const Game = (() => {
         list.innerHTML = `<p class="ladder-empty">Could not load ladder: ${escapeHtml(err.message)}</p>`;
       }
     });
+  }
+
+  function initHelpUI() {
+    const overlay = document.getElementById('help-overlay');
+    if (!overlay) return;
+    document.getElementById('btn-show-help').addEventListener('click', () => {
+      overlay.classList.remove('hidden');
+    });
+    document.getElementById('help-close').addEventListener('click', () => {
+      overlay.classList.add('hidden');
+      try { localStorage.setItem('ab_help_seen', '1'); } catch (_) {}
+    });
+    // Auto-show for first-time visitors
+    try {
+      if (!localStorage.getItem('ab_help_seen')) {
+        overlay.classList.remove('hidden');
+      }
+    } catch (_) {}
   }
 
   function escapeHtml(s) {

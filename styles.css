@@ -1054,6 +1054,31 @@ kbd {
 }
 .auth-display.hidden { display: none; }
 
+/* --------------------------- Help / How to Play modal --------------------------- */
+.help-card { min-width: 380px; max-width: 520px; max-height: 80vh; text-align: left; }
+.help-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: 60vh;
+  overflow-y: auto;
+  margin: 8px 0 14px;
+}
+.help-section h3 {
+  margin: 0 0 6px;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.help-section p {
+  margin: 0 0 6px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text);
+}
+.help-section p:last-child { margin-bottom: 0; }
+
 /* --------------------------- Ladder modal --------------------------- */
 .ladder-card { min-width: 380px; max-width: 480px; max-height: 70vh; }
 .ladder-list {

@@ -96,6 +96,7 @@
         <div class="title-actions slim">
           <button class="btn btn-ghost" id="btn-show-auth">Sign in / Sign up</button>
           <button class="btn btn-ghost" id="btn-show-ladder">Ladder</button>
+          <button class="btn btn-ghost" id="btn-show-help">How to Play</button>
           <button class="btn btn-ghost hidden" id="btn-install">Install App</button>
         </div>
         <div id="install-hint" class="install-hint hidden">
@@ -264,6 +265,49 @@
         <h2>Global Ladder</h2>
         <div class="ladder-list" id="ladder-list">Loading…</div>
         <button class="btn btn-ghost btn-block" id="ladder-close">Close</button>
+      </div>
+    </div>
+
+    <!-- ===== HOW TO PLAY DIALOG ===== -->
+    <div id="help-overlay" class="overlay hidden">
+      <div class="overlay-card help-card">
+        <h2>How to Play</h2>
+        <div class="help-body">
+          <div class="help-section">
+            <h3>Controls</h3>
+            <p><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> to drive your bot</p>
+            <p><kbd>Space</kbd> to fire your weapon</p>
+            <p><kbd>P</kbd> to pause the match</p>
+            <p>On mobile, use the on-screen joystick and FIRE button.</p>
+          </div>
+          <div class="help-section">
+            <h3>Game Modes</h3>
+            <p><strong>Quick Match</strong> — Jump straight into a multiplayer FFA match.</p>
+            <p><strong>Solo / Build</strong> — Design your robot, then fight a tournament of AI opponents.</p>
+          </div>
+          <div class="help-section">
+            <h3>Warm-Up Lobby</h3>
+            <p>While waiting for opponents, demo bots spawn in the arena for you to practise on.</p>
+            <p>Ram them, use your weapon, and push them into the pit or saw blades. They respawn quickly so the action never stops.</p>
+          </div>
+          <div class="help-section">
+            <h3>Bot Workshop</h3>
+            <p>Mix chassis, drive, armour, and weapon parts to tune speed, health, and damage. Watch the radar chart to see how your stats shift.</p>
+            <p>Save up to 5 presets to swap loadouts quickly.</p>
+          </div>
+          <div class="help-section">
+            <h3>Combat Tips</h3>
+            <p><strong>Passive weapons</strong> (spinner, drum, flamer) damage on contact — drive into enemies.</p>
+            <p><strong>Active weapons</strong> (hammer, flipper) need <kbd>Space</kbd> to trigger — time your swings.</p>
+            <p>Use the <strong>pit</strong> and <strong>saw blades</strong> for instant KOs. Hover mods ignore pits and spikes.</p>
+          </div>
+          <div class="help-section">
+            <h3>Progression</h3>
+            <p>Earn <strong>bolts</strong> from wins and <strong>crowns</strong> from achievements. Level up with XP to climb the global ladder and unlock new paint jobs.</p>
+            <p>Pro Pass unlocks every part and paint instantly.</p>
+          </div>
+        </div>
+        <button class="btn btn-ghost btn-block" id="help-close">Got it</button>
       </div>
     </div>
 
